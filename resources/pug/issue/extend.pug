@@ -1,0 +1,346 @@
+extend.blade.php
+
+	| @extends('layouts.master')
+	| @section('title')
+	| @if(isset($subIssue))
+	| {{ $subIssue->title }}
+	| @else
+	| {{ config('app.name') }}
+	| @endif
+	| @endsection
+	| @section('styles')
+	link(rel='stylesheet', href="{{ URL::to('src/master/css/app.css') }}")
+	meta(property='og:title', content='{{ $subIssue->title }}')
+	meta(property='og:type', content='website')
+	| 	{{--  
+	meta(property='og:image', content="{{ URL::to('pie/issue/'.$issue->id.'.png') }}")
+	meta(property='og:image:secure_url', content="{{ URL::to('pie/issue/'.$issue->id.'.png') }}")
+	meta(property='og:image:type', content='image/jpeg')
+	meta(property='og:image:width', content='300')
+	meta(property='og:image:height', content='300')
+	meta(property='og:image:alt', content='Current issue pie chart')
+	|   --}}
+	meta(property='og:site_name', content="{{ config('app.name') }}")
+	meta(property='og:description', content='{{ $subIssue->description }}')
+	| @endsection
+	| @section('content')
+	.full
+	  | @if(isset($subIssue))
+	  | 0) ? ($posNum + $negNum) : 1;
+	  | $posPercent = round(($posNum / $totalNum) * 100);
+	  | $negPercent = round(($negNum / $totalNum) * 100);
+	  | ?>
+	  .card.text-center
+	    .card-header
+	      .card-title
+	        .row
+	          .col-12.col-md-6
+	            h3 {{ $masterIssue->title }}
+	          .col-12.col-md-2
+	            h5 正方:{{ $masterIssueTotalNum['pos'] }}人
+	          .col-12.col-md-2
+	            h5 反方:{{ $masterIssueTotalNum['neg'] }}人
+	          .col-12.col-md-2
+	            a.btn.btn-success(href="{{ route('issue.detail', ['id' => $masterIssue->id]) }}")
+	              | 返回母議題
+	          .col-12.col-md-12
+	            br
+	            .progress
+	              .progress-bar.progress-bar-striped(role='progressbar', style='width:{{ $mPosPercent }}%', aria-valuenow='100', aria-valuemin='0', aria-valuemax='100') {{ $mPosPercent }}%
+	              .progress-bar.progress-bar-striped.bg-danger(role='progressbar', style='width:{{ $mNegPercent }}%', aria-valuenow='100', aria-valuemin='0', aria-valuemax='100') {{ $mNegPercent }}%
+	        br
+	        .text-left
+	          h3
+	            | 延伸： 
+	            issuetitle#issueTitle {{ $subIssue->title }}
+	            | 							@if ($userInSubIssue && $hasJudges)
+	            button.btn.btn-warning(type='button', data-toggle='modal', data-target='#judgeModal', style='float:right;')
+	              | 審核系統
+	            | 							@endif
+	    .card-body
+	      .card-text.float-left
+	        | description); ?>
+	    .card-footer
+	      .col-12.col-md-6
+	        | 議題發表於
+	        | {{ \App\Constant::getTimeFromInt($subIssue->deadline) }}
+	  div
+	    br
+	    center
+	      | @if (!$userInIssue)
+	      a.btn.btn-warning(href="{{ route('issue.detail', ['id' => $subIssue->issue_id]) }}")
+	        | 請先參與母議題
+	      | 				@else
+	      a.btn.btn-primary(href="{{ route('issue.joinExtend', ['id' => $subIssue->id, 'status' => \App\Constant::USER_ISSUE_STATUS_POS]) }}")
+	        | @if ($userInSubIssue)
+	        | @if($user->status == \App\Constant::USER_ISSUE_STATUS_POS)
+	        | 已選擇：
+	        | @else
+	        | 變更為
+	        | @endif
+	        | @else
+	        | 我要成為
+	        | @endif
+	        | 正方
+	        span.badge
+	          | {{ $posNum }}
+	      a.btn.btn-danger(href="{{ route('issue.joinExtend', ['id' => $subIssue->id, 'status' => \App\Constant::USER_ISSUE_STATUS_NEG]) }}")
+	        | @if ($userInSubIssue)
+	        | @if($user->status == \App\Constant::USER_ISSUE_STATUS_NEG)
+	        | 已選擇：
+	        | @else
+	        | 變更為
+	        | @endif
+	        | @else
+	        | 我要成為
+	        | @endif
+	        | 反方
+	        span.badge
+	          | {{ $negNum }}
+	      | 				@endif
+	      br
+	      br
+	      .progress(style='width:30%;float:center;')
+	        .progress-bar.progress-bar-striped(role='progressbar', style='width: {{ $posPercent }}%', aria-valuenow='100', aria-valuemin='0', aria-valuemax='100') {{ $posPercent }}%
+	        .progress-bar.progress-bar-striped.bg-danger(role='progressbar', style='width: {{ $negPercent }}%', aria-valuenow='100', aria-valuemin='0', aria-valuemax='100') {{ $negPercent }}%
+	      br
+	    center
+	      | @if ($userInSubIssue)
+	      .col-lg-8
+	        .input-group.mb-3
+	          .input-group-prepend
+	            span.input-group-text
+	              img(src="{{ URL::to('src/nicknames/'.$user->nickname->img.'.png') }}", alt='{{ $user->nickname->name }}', title='{{ $user->color }}的{{ $user->nickname->name }}', style='width: 25px; height: 25px; background: {{ $user->color }};')
+	            span.input-group-text {{ $user->seq }}號辯論士
+	          textarea#inputComment.form-control(placeholder='輸入您的回應', aria-label='輸入您的回應', rows='1')
+	          span.input-group-btn
+	            button.btn.btn-secondary(type='button', onclick='sendComment()') 留言
+	      br
+	      | 				@endif
+	      #subIssueCommentDiv
+	        | @if (count($messages) > 0)
+	        | {{--
+	        | 這邊基本上完全不一樣了，由於程式碼有點分散所以我大致說一下：
+	        | foreach裡面顯示所有的留言，前兩個if判斷是用來判斷留言的立場，來分別把空白放在前面或後面；
+	        | 第三、四、五個if用來判斷是否超過五句留言，超過時要增加顯示"顯示更多"的區域；
+	        | 最後面的else用來顯示沒有留言時要講的話
+	        | --}}
+	        | @if ($bestCommentPos['num'] > 0 || $bestCommentNeg['num'] > 0)
+	        center
+	          font(size='5') 最佳論述
+	        ul.list-group
+	          #bestComment.row
+	            .col-6
+	              | @if ($bestCommentPos['num'] > 0)
+	              li.list-group-item(style='margin: 5px; border-left:5px #0000FF solid;\
+	              word-break: break-all; word-wrap: break-word;\
+	              text-align:center')
+	                img.float-md-left.commentImg(src="{{ URL::to('src/nicknames/'.$bestCommentPos['message']->user->nickname->img.'.png') }}", alt="{{ $bestCommentPos['message']->user->nickname->name }}", title="{{ $bestCommentPos['message']->user->color }}的{{ $bestCommentPos['message']->user->nickname->name }}", style="width: 25px; height: 25px; background: {{ $bestCommentPos['message']->user->color }};", onclick="go2Profile({{ $bestCommentPos['message']->user->user_id }})")
+	                strong.float-md-left  {{ $bestCommentPos['message']->user->seq }}號辯論士
+	                br
+	                div
+	                  | comment); ?>
+	              | 										@endif
+	            .col-6
+	              | @if ($bestCommentNeg['num'] > 0)
+	              li.list-group-item(style='margin: 5px; border-right:5px #FF0000 solid;\
+	              word-break: break-all; word-wrap: break-word;\
+	              text-align:center')
+	                img.float-md-right.commentImg(src="{{ URL::to('src/nicknames/'.$bestCommentNeg['message']->user->nickname->img.'.png') }}", alt="{{ $bestCommentNeg['message']->user->nickname->name }}", title="{{ $bestCommentNeg['message']->user->color }}的{{ $bestCommentNeg['message']->user->nickname->name }}", style="width: 25px; height: 25px; background: {{ $bestCommentNeg['message']->user->color }};", onclick="go2Profile({{ $bestCommentNeg['message']->user->user_id }})")
+	                strong.float-md-right  {{ $bestCommentNeg['message']->user->seq }}號辯論士
+	                br
+	                div
+	                  | comment); ?>
+	              | 										@endif
+	        hr
+	        | 						@endif
+	        ul.list-group
+	          #subIssueComment.row
+	            | @foreach ($messages as $created_at => $message)
+	            | thumb_up_pos)){
+	            | $ups = json_decode($message->thumb_up_pos);
+	            | $thumbUpsPos = count((array)$ups);
+	            | if($userInSubIssue){
+	            | $uId = Auth::user()->id;
+	            | if(isset($ups->$uId)) $thumbUpAlready = true;
+	            | }
+	            | }
+	            | if(isset($message->thumb_up_neg)){
+	            | $ups = json_decode($message->thumb_up_neg);
+	            | $thumbUpsNeg = count((array)$ups);
+	            | if($userInSubIssue){
+	            | $uId = Auth::user()->id;
+	            | if(isset($ups->$uId)) $thumbUpAlready = true;
+	            | }
+	            | }
+	            | //檢查留言是否被檢舉
+	            | if($userInSubIssue && $hasJudges && isset($wait4Judges->$messageId)){
+	            | $judgesList .= '
+	            li.judgeModalListItem.list-group-item(id="judgeModalListItem-'.$messageId.'")
+	              | '.
+	              | nl2br($message->comment).
+	              | '
+	              button.btn.btn-primary.btn-sm(type='button', style='float: right;') 刪除
+	              | '.
+	              | 												'
+	              button.btn.btn-secondary.btn-sm(type='button', style='float: right;') 保留
+	              | '.
+	              | 												'
+	            br
+	            | ';
+	            | 										}
+	            | 									?>
+	            | 									@if(!$isHide && $messageNum > $hideMessageGap)
+	          #collapseComment.collapse
+	            #subIssueCollapseComment.row
+	              | @endif
+	              | @if ($currentCommentStatus != $message->status)
+	              .w-100
+	                br
+	              .w-100
+	                br
+	              | 									@endif
+	              | 									@if ($message->status == \App\Constant::USER_ISSUE_STATUS_POS)
+	              .col-10(style='text-align:left')
+	                span.badge.badge-pill.badge-primary.commentFloor(id='{{ $messageNum }}F', onclick='addTag({{ $messageNum }})', uid='{{ $message->user->user_id }}')
+	                  | {{ $messageNum }}F
+	                | 											@if(!isset($message->delete) && $userInSubIssue && $message->user->user_id == Auth::user()->id)
+	                a.badge.badge-pill(id='commentEdit_{{$messageNum}}', data-toggle='modal', data-target='#modalCommentEdit', href='#', data-subissue='{{ $subIssue->id }}', data-seq='{{ $messageNum }}', data-id='{{ $messageId }}', data-content='{{ $message->comment }}')
+	                  h8 編輯
+	                | 											@endif
+	                li.list-group-item(id='comment_{{ $message->status }}_{{ $messageNum }}', style='margin: 5px; border-left:5px #0000FF solid;\
+	                word-break: break-all; word-wrap: break-word;\
+	                text-align:center')
+	                  img.float-md-left.commentImg(src="{{ URL::to('src/nicknames/'.$message->user->nickname->img.'.png') }}", alt='{{ $message->user->nickname->name }}', title='{{ $message->user->color }}的{{ $message->user->nickname->name }}', style='width: 25px; height: 25px; background: {{ $message->user->color }};', onclick='go2Profile({{ $message->user->user_id }})')
+	                  strong.float-md-left  {{ $message->user->seq }}號辯論士
+	                  br
+	                  div(id='comment_{{$messageNum}}')
+	                    | @if (!isset($message->delete))
+	                    | comment); ?>
+	                    | @else
+	                    strong Jugze： 留言遭到刪除
+	                    | 													@endif
+	                font.float-md-left(size='1')
+	                  | {{ \App\Constant::getPassedTimeFromInt($created_at) }}
+	                  | @if (!isset($message->delete) && $userInSubIssue)
+	                  a.badge.badge-pill(data-toggle='modal', data-target='#modalCommentJudge', href='#', data-subissue='{{ $subIssue->id }}', data-id='{{ $messageId }}', data-content='{{ $message->comment }}')
+	                    | 檢舉
+	                  | 												@endif
+	                | 											@if (!isset($message->delete))
+	                button.btn.btn-sm.float-md-right(id='commentThumb_{{$messageNum}}', type='button', class="{{ ($thumbUpAlready) ? 'btn-primary' : 'btn-light'}}", aria-hidden='true', @if='', ($userinsubissue)='', onclick="thumbChange({{$messageNum}}, {{$subIssue->id}}, '{{$messageId}}',\
+	                {{Auth::user()->id}}, '{{ ($thumbUpAlready) ? 'down' : 'up' }}')", @endif='')
+	                  i.fa.fa-thumbs-up
+	                  | 													@if ($thumbUpsPos > 0)
+	                  span.badge.badge-primary {{$thumbUpsPos}}
+	                  | 													@endif
+	                  | 													@if ($thumbUpsNeg > 0)
+	                  span.badge.badge-danger {{$thumbUpsNeg}}
+	                  | 													@endif
+	                | 											@endif
+	              .col-2
+	              | 									@else
+	              .col-2
+	              .col-10(style='text-align:right')
+	                | @if(!isset($message->delete) && $userInSubIssue && $message->user->user_id == Auth::user()->id)
+	                a.badge.badge-pill(id='commentEdit_{{$messageNum}}', data-toggle='modal', data-target='#modalCommentEdit', href='#', data-subissue='{{ $subIssue->id }}', data-seq='{{ $messageNum }}', data-id='{{ $messageId }}', data-content='{{ $message->comment }}')
+	                  h8 編輯
+	                | 											@endif
+	                span.badge.badge-pill.badge-danger.commentFloor(id='{{ $messageNum }}F', onclick='addTag({{ $messageNum }})', uid='{{ $message->user->user_id }}')
+	                  | {{ $messageNum }}F
+	                li.list-group-item(id='comment_{{ $message->status }}_{{ $messageNum }}', style='margin: 5px; border-right:5px #FF0000 solid;\
+	                word-break: break-all; word-wrap: break-word;\
+	                text-align:center')
+	                  img.float-md-right.commentImg(src="{{ URL::to('src/nicknames/'.$message->user->nickname->img.'.png') }}", alt='{{ $message->user->nickname->name }}', title='{{ $message->user->color }}的{{ $message->user->nickname->name }}', style='width: 25px; height: 25px; background: {{ $message->user->color }};', onclick='go2Profile({{ $message->user->user_id }})')
+	                  strong.float-md-right  {{ $message->user->seq }}號辯論士
+	                  br
+	                  div(id='comment_{{$messageNum}}')
+	                    | @if (!isset($message->delete))
+	                    | comment); ?>
+	                    | @else
+	                    strong Jugze： 留言遭到刪除
+	                    | 													@endif
+	                | 											@if (!isset($message->delete))
+	                button.btn.btn-sm.float-md-left(id='commentThumb_{{$messageNum}}', type='button', class="{{ ($thumbUpAlready) ? 'btn-primary' : 'btn-light'}}", aria-hidden='true', @if='', ($userinsubissue)='', onclick="thumbChange({{$messageNum}}, {{$subIssue->id}}, '{{$messageId}}',\
+	                {{Auth::user()->id}}, '{{ ($thumbUpAlready) ? 'down' : 'up' }}')", @endif='')
+	                  i.fa.fa-thumbs-up
+	                  | 													@if ($thumbUpsPos > 0)
+	                  span.badge.badge-primary {{$thumbUpsPos}}
+	                  | 													@endif
+	                  | 													@if ($thumbUpsNeg > 0)
+	                  span.badge.badge-danger {{$thumbUpsNeg}}
+	                  | 													@endif
+	                | 											@endif
+	                font.float-md-right(size='1')
+	                  | {{ \App\Constant::getPassedTimeFromInt($created_at) }}
+	                  | @if (!isset($message->delete) && $userInSubIssue)
+	                  a.badge.badge-pill(data-toggle='modal', data-target='#modalCommentJudge', href='#', data-subissue='{{ $subIssue->id }}', data-id='{{ $messageId }}', data-content='{{ $message->comment }}')
+	                    | 檢舉
+	                  | 												@endif
+	              | 									@endif
+	              .w-100
+	              | status;
+	              | ?>
+	              | @endforeach
+	            | 								@if ($isHide)
+	          | 								@endif
+	        | 						@if ($isHide)
+	        p
+	          button.btn.btn-primary(type='button', data-toggle='collapse', data-target='#collapseComment', aria-expanded='false', aria-controls='collapseComment') 顯示更多留言...
+	        | 						@endif
+	        | 					@else
+	        #SubIssueCommentNoOne 成為第一個留言的人吧！
+	        | 					@endif
+	    br
+	  // Modal
+	  #modalCommentEdit.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalCommentEditTitle', aria-hidden='true')
+	    .modal-dialog.modal-dialog-centered(role='document')
+	      .modal-content
+	        .modal-header
+	          button.btn.btn-sm.btn-danger.delete(type='button') 刪除
+	          h5#modalCommentEditTitle.modal-title  編輯留言
+	          button.close(type='button', data-dismiss='modal', aria-label='Close')
+	            span(aria-hidden='true') ×
+	        .modal-body
+	          .card.card-body.text-center
+	            textarea.editComment(rows='4')
+	        .modal-footer
+	          button.btn.btn-secondary(type='button', data-dismiss='modal') 取消
+	          button.btn.btn-primary.confirm(type='button') 確定
+	  #modalCommentJudge.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalCommentJudgeTitle', aria-hidden='true')
+	    .modal-dialog.modal-dialog-centered(role='document')
+	      .modal-content
+	        .modal-header
+	          h5#modalCommentJudgeTitle.modal-title 確認要檢舉此篇留言？
+	          button.close(type='button', data-dismiss='modal', aria-label='Close')
+	            span(aria-hidden='true') ×
+	        .modal-body
+	          .card.card-body.text-center
+	        .modal-footer
+	          button.btn.btn-secondary(type='button', data-dismiss='modal') 取消
+	          button.btn.btn-primary.confirm(type='button') 確定
+	  #judgeModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='judgeModalTitle', aria-hidden='true')
+	    .modal-dialog.modal-dialog-centered(role='document')
+	      .modal-content
+	        .modal-header
+	          h5#judgeModalTitle.modal-title 審核視窗
+	          button.close(type='button', data-dismiss='modal', aria-label='Close')
+	            span(aria-hidden='true') ×
+	        .modal-body
+	          ul#judgeModalList.list-group.list-group-flush
+	            | @if($userInSubIssue && $hasJudges)
+	            | @endif
+	  | 	@endif
+	form.login-form(role='form', action="{{ route('user.profile') }}", method='post')
+	  input#go2ProfileTarget(type='text', name='targetId', value='', style='display:none;')
+	  input#go2ProfileIssue(type='text', name='id', value='{{$subIssue->issue_id}}', style='display:none;')
+	  button#go2ProfileSubmit(type='submit', style='display:none;')
+	  | 	{{ csrf_field() }}
+	| @endsection
+	| {{--  載入 master 版型專用的 js  --}}
+	| @section('scripts')
+	link(rel='stylesheet', href="{{ URL::to('src/master/css/comment.css') }}")
+	script(src="{{ URL::to('src/master/js/app.js') }}")
+	script(src="{{ URL::to('src/extend/comment.js') }}")
+	script(src="{{ URL::to('src/extend/commentAction.js') }}")
+	script(src="{{ URL::to('src/extend/thumb.js') }}")
+	| @endsection

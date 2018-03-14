@@ -1,0 +1,94 @@
+create.blade.php
+
+  | @extends('layouts.master')
+  | @section('title')
+  | 創建議題
+  | @endsection
+  | @section('styles')
+  link(rel='stylesheet', href="{{ URL::to('src/master/css/app.css') }}")
+  script(src="{{ URL::to('ckeditor/ckeditor.js') }}")
+  script(src="{{ URL::to('ckfinder/ckfinder.js') }}")
+  | @endsection
+  | @section('content')
+  .full
+    | @if (isset($issue))
+    center
+      h1 編輯議題
+    | @else
+    center
+      h1 創建議題
+    | @endif
+    | @if(count($errors) > 0)
+    .alert.alert-danger
+      | @foreach($errors->all() as $error)
+      p {{ $error }}
+      | @endforeach
+    | @endif
+    | @if (isset($issue))
+    form(action="{{ route('issue.editIssue') }}", method='post')
+      | @else
+      form(action="{{ route('issue.createIssue') }}", method='post')
+        | @endif
+        .form-group
+          label(for='title')
+            font(size='5') 標題
+          | @if (isset($issue))
+          input#title.form-control(type='text', name='title', value='{{ $issue->title }}')
+          | @else
+          input#title.form-control(type='text', name='title')
+          | @endif
+        .form-group
+          label(for='description')
+            font(size='5') 內容
+          textarea#description(name='description', rows='10', cols='80')
+            | @if (isset($issue))
+            | description ?>
+            | @else
+            | 客觀且完整的說明您的議題吧！
+            | @endif
+        | @if (isset($issue))
+        input.form-control(type='text', name='issueId', value='{{ $issue->id }}', style='display:none')
+        | @if (!$isExtend)
+        .form-group
+          input.form-control(type='text', name='issueType', value='issue', style='display:none')
+          label(for='checkCycle')
+            font(size='5') 議題循環週期（天）
+          input#checkCycle.form-control(type='number', name='checkCycle', value='{{ (int)$issue->check_cycle }}', min='1')
+        .form-group
+          label(for='voteCycle')
+            font(size='5') 投票持續時間（天）
+          input#voteCycle.form-control(type='number', name='voteCycle', value='{{ (int)$issue->vote_cycle }}', min='1')
+        | @else
+        input.form-control(type='text', name='issueType', value='extend', style='display:none')
+        | @endif
+        button.btn.btn-primary.btn-lg.btn-block(type='submit') 確定修改
+        | @else
+        .form-group
+          label(for='checkCycle')
+            font(size='5') 議題循環週期（天）
+          input#checkCycle.form-control(type='number', name='checkCycle', value='1', min='1')
+        .form-group
+          label(for='voteCycle')
+            font(size='5') 投票持續時間（天）
+          input#voteCycle.form-control(type='number', name='voteCycle', value='1', min='1')
+        button.btn.btn-primary.btn-lg.btn-block(type='submit') 發佈
+        | @endif
+        | {{ csrf_field() }}
+  | @endsection
+  | @section('scripts')
+  script(src="{{ URL::to('src/master/js/app.js') }}")
+  script.
+    // Replace the <textarea id="description"> with a CKEditor
+    // instance, using default configuration.
+    let description = CKEDITOR.replace('description', {
+    filebrowserImageBrowseUrl: "ckfinder/ckfinder.html?Type=Images&id={{ hash('sha256', Auth::user()->id) }}"
+    });
+    CKFinder.setupCKEditor( description, "{{ URL::asset('ckfinder/ckfinder.js') }}" );
+    console.log(CKFinder);
+    
+  | {{--  
+  script(src="{{ URL::asset('nicEdit/nicEdit.js') }}", type='text/javascript')
+  script(type='text/javascript').
+    bkLib.onDomLoaded(nicEditors.allTextAreas);
+  | --}}
+  | @endsection

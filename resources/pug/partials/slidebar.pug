@@ -1,0 +1,48 @@
+slidebar.blade.php
+
+  | {{--  這邊是主要版型的左方導覽列  --}}
+  #sidebar.column.col-sm-2.col-1.sidebar-offcanvas.text-center
+    .nav.flex-column
+      | {{--  設定 logo 點擊後會回到首頁 issue.index  --}}
+      a(href="{{ route('issue.index') }}")
+        img.rounded.mx-auto.d-sm-block.d-none(src="{{ URL::to('src/master/img/logo.png')}}", alt='logo', style='width: 80%;')
+    br
+    #lg-menu.nav.flex-column(aria-orientation='vertical')
+      | {{--  手機版型時 logo 會消失所以要多出一個 home 的圖示給使用者按  --}}
+      a.nav-link.active.d-inline.d-sm-none(href="{{ route('issue.index') }}")
+        i.fa.fa-home
+      |         {{--  單純顯示使用者身分  --}}
+      a.nav-link.d-sm-inline.d-none(href='#')
+        i.fa.fa-user-circle(aria-hidden='true')
+        strong
+          | Hello,
+          | @if(Auth::check())
+          | {{ Auth::user()->nickname }}
+          | @else
+          | 訪客
+          | @endif
+      |         {{--  使用者登入時可以用的功能  --}}
+      |         @if(Auth::check())
+      form#profile.login-form(role='form', action="{{ route('user.profile') }}", method='post')
+        input(type='text', name='targetId', value='{{Auth::user()->id}}', style='display:none;')
+        a.nav-link.active(onclick='profile.submit();', href='javascript:;')
+          i.fa.fa-user
+          strong.d-sm-inline.d-none 我的檔案
+        |                 {{ csrf_field() }}
+      a.nav-link.active(href="{{ route('issue.createIssue') }}")
+        i.fa.fa-plus
+        strong.d-sm-inline.d-none 發佈議題
+      a.nav-link.active(href="{{ route('message.getMessageIndexClear') }}", target='_blank')
+        i.fa.fa-comment
+        strong.d-sm-inline.d-none 開始聊天
+      br
+      a.nav-link.active(href="{{ route('user.logout') }}")
+        i.fa.fa-user-times
+        text.d-sm-inline.d-none 登出
+      |         @else
+      |         {{--  訪客只能登入或註冊  --}}
+      br
+      a.nav-link.active(href="{{ route('user.signinup') }}")
+        i.fa.fa-user-plus
+        text.d-sm-inline.d-none 登入 | 註冊
+      |         @endif

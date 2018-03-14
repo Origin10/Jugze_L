@@ -1,0 +1,35 @@
+index.blade.php
+
+	| {{--  **必要** 延伸 layouts.master  --}}
+	| @extends('layouts.master')
+	| @section('title')
+	| {{ config('app.name') }}
+	| @endsection
+	| {{--  載入 master 版型專用的 css  --}}
+	| @section('styles')
+	link(rel='stylesheet', href="{{ URL::to('src/master/css/app.css') }}")
+	| @endsection
+	| {{--  中間內容部分  --}}
+	| @section('content')
+	.full
+	| 	@if (count($issues) > 0)
+	| 		@foreach($issues as $issue)
+	.card.text-center
+	  .card-header
+	    h5.card-title {{ $issue->title }}
+	  .card-body
+	    .card-text.issue-short-intro
+	      | description);
+	      | ?>
+	    a.btn.btn-primary(href="{{ route('issue.detail', ['id' => $issue->id]) }}") 繼續閱讀...
+	  .card-footer.text-muted
+	    | {{ \App\Constant::getTimeFromInt($issue->check_point) }}
+	    | 結算
+	br
+	| 		@endforeach
+	| 	@endif
+	| @endsection
+	| {{--  載入 master 版型專用的 js  --}}
+	| @section('scripts')
+	script(src="{{ URL::to('src/master/js/app.js') }}")
+	| @endsection

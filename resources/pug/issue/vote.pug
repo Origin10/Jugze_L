@@ -1,0 +1,52 @@
+vote.blade.php
+
+	| @extends('layouts.master')
+	| @section('title')
+	| @if(isset($title))
+	| {{ $title.'延伸投票' }}
+	| @else
+	| {{ config('app.name') }}
+	| @endif
+	| @endsection
+	| @section('styles')
+	link(rel='stylesheet', href="{{ URL::to('src/master/css/app.css') }}")
+	| @endsection
+	| @section('content')
+	.full
+	  center
+	    h2  {{ $title }} 
+	    h3  - 延伸議題投票 
+	    br
+	    p 投票截止:{{ \App\Constant::getTimeFromInt($subIssue->deadline) }}
+	    p {{ \App\Constant::getLeftTimeFromInt($subIssue->deadline) }}
+	    | 		@if(count($errors) > 0)
+	    .alert.alert-danger
+	      | @foreach($errors->all() as $error)
+	      p {{ $error }}
+	      | 				@endforeach
+	    | 		@endif
+	  ul.list-group
+	    | @foreach ($options as $option)
+	    li.list-group-item.d-flex.justify-content-between.align-items-center
+	      input(name='option', id='{{ $option->id }}', type='checkbox', {{='')
+	      | id])) ? 'checked' : '' }}>
+	      | 				{{ $option->title }}
+	      span.badge.badge-primary.badge-pill(id='count_{{ $option->id }}') {{ count($option->voters) }}
+	    | 		@endforeach
+	  br
+	  br
+	  | 	{{--  沒有提出過選項的人可以提出選項  --}}
+	  | 	@if (!$alreadyPost)
+	  form(action="{{ route('issue.createSubIssueVote', ['id' => $subIssue->id]) }}", method='post')
+	    .input-group.mb-3
+	      input.form-control(name='title', type='text', placeholder='輸入欲新增的投票選項')
+	      .input-group-append
+	        button.btn.btn-outline-secondary(type='submit') 新增
+	    | 			{{ csrf_field() }}
+	  | 	@endif
+	| @endsection
+	| {{--  載入 master 版型專用的 js  --}}
+	| @section('scripts')
+	script(src="{{ URL::to('src/master/js/app.js') }}")
+	script(src="{{ URL::to('src/master/js/subIssueVote.js') }}")
+	| @endsection
